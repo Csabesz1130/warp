@@ -1,0 +1,8 @@
+name: TargetGraph Campaign Status
+description: Inspect TargetGraph campaign training and flywheel status from Warp.
+command: |
+  integrations/targetgraph/tg-warp status --campaign {{campaign}}
+arguments:
+  - name: campaign
+    description: TargetGraph campaign name.
+    default: catsper
