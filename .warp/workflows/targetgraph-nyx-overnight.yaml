@@ -1,7 +1,7 @@
 name: TargetGraph NYX Overnight
 description: Run the TargetGraph NYX automation profile from Warp.
 command: |
-  integrations/targetgraph/tg-warp nyx --profile {{profile}}
+  bash integrations/targetgraph/tg-warp nyx --profile {{profile}}
 arguments:
   - name: profile
     description: Training profile.
