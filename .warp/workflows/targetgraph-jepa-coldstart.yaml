@@ -1,7 +1,7 @@
 name: TargetGraph JEPA Cold Start
 description: Run a TargetGraph JEPA cold-start training pass from Warp.
 command: |
-  integrations/targetgraph/tg-warp coldstart --domain {{domain}} --profile {{profile}}
+  bash integrations/targetgraph/tg-warp coldstart --domain {{domain}} --profile {{profile}}
 arguments:
   - name: domain
     description: JEPA domain to train, or all.
