@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+TargetGraph Warp bridge
+
+Usage:
+  tg-warp doctor
+  tg-warp coldstart --domain <domain|all> [--profile minimal|standard|full]
+  tg-warp nyx [--profile minimal|standard|full]
+  tg-warp status --campaign <campaign>
+  tg-warp promote --campaign <campaign> --adapter <adapter> [--no-require-pass]
+  tg-warp passthrough -- <tg train args...>
+
+Environment:
+  TARGETGRAPH_REPO       Path to a local TargetGraph checkout.
+  TARGETGRAPH_CLI        Explicit tg executable or Python script.
+  TARGETGRAPH_PROFILE    Default profile, otherwise minimal.
+USAGE
+}
+
+fail() {
+  echo "tg-warp: $*" >&2
+  exit 1
+}
+
+repo_root() {
+  if [[ -n "${TARGETGRAPH_REPO:-}" ]]; then
+    printf '%s\n' "$TARGETGRAPH_REPO"
+    return 0
+  fi
+
+  local here
+  here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  if [[ -d "$here/../../../targetgraph_research_suite" ]]; then
+    cd "$here/../../../targetgraph_research_suite" && pwd
+    return 0
+  fi
+
+  return 1
+}
+
+resolve_tg() {
+  if [[ -n "${TARGETGRAPH_CLI:-}" ]]; then
+    printf '%s\n' "$TARGETGRAPH_CLI"
+    return 0
+  fi
+
+  local root=""
+  if root="$(repo_root 2>/dev/null)"; then
+    if [[ -x "$root/.venv/bin/tg" ]]; then
+      printf '%s\n' "$root/.venv/bin/tg"
+      return 0
+    fi
+    if [[ -f "$root/scripts/targetgraph_train_cli.py" ]]; then
+      printf '%s\n' "$root/scripts/targetgraph_train_cli.py"
+      return 0
+    fi
+  fi
+
+  if command -v tg >/dev/null 2>&1; then
+    command -v tg
+    return 0
+  fi
+
+  return 1
+}
+
+run_tg_train() {
+  local tg_cmd
+  tg_cmd="$(resolve_tg)" || fail "could not find TargetGraph CLI. Set TARGETGRAPH_REPO or TARGETGRAPH_CLI."
+
+  if [[ "$tg_cmd" == *.py ]]; then
+    python "$tg_cmd" train "$@"
+  else
+    "$tg_cmd" train "$@"
+  fi
+}
+
+profile="${TARGETGRAPH_PROFILE:-minimal}"
+cmd="${1:-}"
+[[ -n "$cmd" ]] || { usage; exit 2; }
+shift || true
+
+case "$cmd" in
+  doctor)
+    tg_cmd="$(resolve_tg)" || fail "could not find TargetGraph CLI. Set TARGETGRAPH_REPO or TARGETGRAPH_CLI."
+    echo "TargetGraph CLI: $tg_cmd"
+    if root="$(repo_root 2>/dev/null)"; then
+      echo "TargetGraph repo: $root"
+    else
+      echo "TargetGraph repo: not set"
+    fi
+    run_tg_train doctor --json
+    ;;
+  coldstart)
+    domain=""
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --domain) domain="${2:-}"; shift 2 ;;
+        --profile) profile="${2:-}"; shift 2 ;;
+        *) fail "unknown coldstart argument: $1" ;;
+      esac
+    done
+    [[ -n "$domain" ]] || fail "coldstart requires --domain"
+    run_tg_train coldstart --domain "$domain" --profile "$profile" --json
+    ;;
+  nyx)
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --profile) profile="${2:-}"; shift 2 ;;
+        *) fail "unknown nyx argument: $1" ;;
+      esac
+    done
+    run_tg_train nyx --profile "$profile" --json
+    ;;
+  status)
+    campaign=""
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --campaign) campaign="${2:-}"; shift 2 ;;
+        *) fail "unknown status argument: $1" ;;
+      esac
+    done
+    [[ -n "$campaign" ]] || fail "status requires --campaign"
+    run_tg_train status --campaign "$campaign" --json
+    ;;
+  promote)
+    campaign=""
+    adapter=""
+    require_pass="--require-pass"
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --campaign) campaign="${2:-}"; shift 2 ;;
+        --adapter) adapter="${2:-}"; shift 2 ;;
+        --no-require-pass) require_pass=""; shift ;;
+        *) fail "unknown promote argument: $1" ;;
+      esac
+    done
+    [[ -n "$campaign" ]] || fail "promote requires --campaign"
+    [[ -n "$adapter" ]] || fail "promote requires --adapter"
+    if [[ -n "$require_pass" ]]; then
+      run_tg_train promote --campaign "$campaign" --adapter "$adapter" "$require_pass" --json
+    else
+      run_tg_train promote --campaign "$campaign" --adapter "$adapter" --json
+    fi
+    ;;
+  passthrough)
+    [[ "${1:-}" == "--" ]] && shift
+    run_tg_train "$@"
+    ;;
+  -h|--help|help)
+    usage
+    ;;
+  *)
+    usage
+    fail "unknown command: $cmd"
+    ;;
+esac
