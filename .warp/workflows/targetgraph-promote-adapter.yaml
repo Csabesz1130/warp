@@ -1,7 +1,7 @@
 name: TargetGraph Promote Adapter
 description: Promote a TargetGraph campaign adapter after gates pass.
 command: |
-  integrations/targetgraph/tg-warp promote --campaign {{campaign}} --adapter {{adapter}}
+  bash integrations/targetgraph/tg-warp promote --campaign {{campaign}} --adapter {{adapter}}
 arguments:
   - name: campaign
     description: TargetGraph campaign name.
