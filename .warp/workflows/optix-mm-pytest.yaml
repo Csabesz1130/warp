@@ -1,0 +1,4 @@
+name: Optix-MM pytest
+description: Sync uv deps (with dev) and run Optix-MM unit tests — no Becker dataset required.
+command: |
+  cd optix-mm && uv sync --extra dev && uv run pytest -v

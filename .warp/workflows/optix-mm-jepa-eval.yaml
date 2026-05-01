@@ -1,0 +1,11 @@
+name: Optix-MM JEPA eval
+description: Evaluate a saved forecaster joblib on the holdout split (requires BECKER_DATA_DIR). Writes gate summary JSON when --out-json is set.
+command: |
+  cd optix-mm && uv sync && uv run python scripts/eval_jepa_forecaster.py {{model_path}} {{out_json_flag}}
+arguments:
+  - name: model_path
+    description: Path to forecaster-*.joblib from runs/jepa-train/ or runs/jepa-artifacts/<id>/forecaster.joblib.
+    default: "./runs/jepa-train/forecaster-replace-me.joblib"
+  - name: out_json_flag
+    description: Optional e.g. "--out-json ./runs/jepa-eval-report.json"; leave empty to print JSON to stdout.
+    default: ""

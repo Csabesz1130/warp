@@ -1,0 +1,11 @@
+name: Optix-MM backtest
+description: Historical OptimismTax-MM replay over Becker trades (requires data + calibration recommended).
+command: |
+  cd optix-mm && uv sync && uv run python scripts/run_backtest.py --start {{start}} --end {{end}}
+arguments:
+  - name: start
+    description: ISO start date (inclusive).
+    default: "2025-01-01"
+  - name: end
+    description: ISO end date (inclusive).
+    default: "2025-11-25"

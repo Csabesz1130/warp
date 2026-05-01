@@ -1,0 +1,4 @@
+name: Optix-MM replicate Becker
+description: Sanity-check Becker (2026) replication against local Parquet (set BECKER_DATA_DIR / use optix-mm/.env).
+command: |
+  cd optix-mm && uv sync && uv run python scripts/replicate_becker.py

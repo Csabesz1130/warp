@@ -1,0 +1,4 @@
+name: Optix-MM build calibration
+description: Regenerate YES winrate calibration JSON from Becker data (requires BECKER_DATA_DIR).
+command: |
+  cd optix-mm && uv sync && uv run python scripts/build_calibration.py

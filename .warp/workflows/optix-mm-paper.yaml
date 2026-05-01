@@ -1,0 +1,8 @@
+name: Optix-MM paper trade
+description: Connect to Kalshi WebSocket and journal simulated fills (needs KALSHI_KEY_ID + secrets/kalshi.pem).
+command: |
+  cd optix-mm && uv sync && uv run python scripts/run_paper.py --max-markets {{max_markets}}
+arguments:
+  - name: max_markets
+    description: Max open markets to subscribe.
+    default: "200"

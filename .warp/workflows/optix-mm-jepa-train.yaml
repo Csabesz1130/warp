@@ -1,0 +1,8 @@
+name: Optix-MM JEPA train
+description: Train sklearn JEPA-Forecaster v1 on Becker aggregates (requires BECKER_DATA_DIR + calibration optional). Use --register only after reviewing gate metrics.
+command: |
+  cd optix-mm && uv sync && uv run python scripts/train_jepa_forecaster.py {{register_flag}}
+arguments:
+  - name: register_flag
+    description: Pass "--register" to copy an approved artifact into runs/jepa-artifacts/ when gates pass; leave empty for train-only output under runs/jepa-train/.
+    default: ""

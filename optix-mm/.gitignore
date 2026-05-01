@@ -1,0 +1,15 @@
+.env
+secrets/
+runs/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.coverage
+output/
+prediction-market-analysis/
+# Root-only: avoids ignoring src/optix/data/ Python package.
+/data/
+*.parquet
