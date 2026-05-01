@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "twinforge://tools/optimize",
+  "title": "twinforge.optimize",
+  "description": "Generate setpoint schedules that minimize energy subject to comfort and safety constraints. MPC over a rolling horizon. Returns a recommendation queue, never directly mutates the BMS.",
+  "type": "object",
+  "required": ["building_id"],
+  "properties": {
+    "building_id": { "type": "string" },
+    "horizon_hours": { "type": "integer", "default": 24, "minimum": 1, "maximum": 168 },
+    "replan_interval_minutes": { "type": "integer", "default": 15 },
+    "comfort_band_c": {
+      "type": "object",
+      "properties": {
+        "low": { "type": "number", "default": -1.0 },
+        "high": { "type": "number", "default": 1.0 }
+      }
+    },
+    "ventilation": {
+      "type": "string",
+      "enum": ["ashrae_62_1_minimum", "always_at_setpoint", "demand_controlled"],
+      "default": "ashrae_62_1_minimum"
+    },
+    "ramp_rate_c_per_15min": { "type": "number", "default": 1.0 },
+    "max_state_changes_per_hour": { "type": "integer", "default": 4 },
+    "candidate_count": {
+      "type": "integer",
+      "default": 8,
+      "description": "Number of substrate-proposed candidate schedules to score before refinement."
+    },
+    "refine": {
+      "type": "string",
+      "enum": ["langevin", "casadi_mpc_fallback", "none"],
+      "default": "langevin"
+    },
+    "approval_mode": {
+      "type": "string",
+      "enum": ["shadow", "approval", "closed_loop_with_veto"],
+      "default": "approval",
+      "description": "shadow = log only. approval = recommend, operator approves each. closed_loop_with_veto = auto-apply unless flagged."
+    }
+  },
+  "additionalProperties": false,
+  "x-output": {
+    "type": "object",
+    "properties": {
+      "building_id": { "type": "string" },
+      "plan_id": { "type": "string" },
+      "horizon_hours": { "type": "integer" },
+      "predicted_savings_kwh": { "type": "number" },
+      "predicted_savings_pct": { "type": "number" },
+      "comfort_violations_predicted": { "type": "integer" },
+      "recommendations": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "zone": { "type": "string" },
+            "change_summary": { "type": "string" },
+            "predicted_savings_kwh_day": { "type": "number" },
+            "predicted_comfort_delta_c": { "type": "number" },
+            "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+            "rationale": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+  "x-falsifiability": [
+    "≥ 10% predicted savings vs observed-control baseline on held-out weeks of LBNL B59, Pecan Street, and one synthetic building",
+    "plan generation in ≤ 30 seconds for a 24h horizon",
+    "comfort constraints satisfied for ≥ 99% of the planning horizon",
+    "first real customer: ≥ 5% measured savings in shadow mode after 30 days"
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "twinforge://tools/fit",
+  "title": "twinforge.fit",
+  "description": "Fit a physics-grounded latent twin to a building's history. Long-running; emits streaming progress events. Backed by REASONER-JEPA-NEXT substrate.",
+  "type": "object",
+  "required": ["building_id"],
+  "properties": {
+    "building_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+    "substrate_version": {
+      "type": "string",
+      "default": "v0.2.0/s100m_stage3",
+      "description": "Pinned substrate checkpoint. Use 'random_init' to run the ablation baseline."
+    },
+    "history_window_days": { "type": "integer", "default": 14, "minimum": 7, "maximum": 365 },
+    "max_wall_seconds": {
+      "type": "integer",
+      "default": 86400,
+      "description": "Hard wall-time budget. Twin must fit within this or fail."
+    },
+    "freeze_substrate": {
+      "type": "boolean",
+      "default": true,
+      "description": "If true, only the per-building adapter is updated; substrate weights are frozen."
+    },
+    "validate_held_out": {
+      "type": "boolean",
+      "default": true,
+      "description": "Run held-out 7d energy-MAPE + zone-temp-RMSE checks before reporting success."
+    }
+  },
+  "additionalProperties": false,
+  "x-output": {
+    "type": "object",
+    "properties": {
+      "building_id": { "type": "string" },
+      "adapter_path": { "type": "string" },
+      "substrate_version": { "type": "string" },
+      "fit_seconds": { "type": "number" },
+      "validation": {
+        "type": "object",
+        "properties": {
+          "energy_mape_7d": { "type": "number" },
+          "zone_temp_rmse_24h_c": { "type": "number" },
+          "calibration_ece": { "type": "number" }
+        }
+      },
+      "passed_falsifiability_gate": { "type": "boolean" }
+    }
+  },
+  "x-streaming-events": [
+    "fit.started",
+    "fit.epoch",
+    "fit.refit",
+    "fit.validation",
+    "fit.completed",
+    "fit.failed"
+  ],
+  "x-falsifiability": [
+    "fit completes in ≤ 24h on a single H100 (or equivalent)",
+    "held-out 7d energy MAPE ≤ 10% on LBNL B59, Pecan Street, and one synthetic building",
+    "zone temp RMSE ≤ 1.0 °C over a 24h horizon",
+    "substrate ablation: random_init baseline must NOT converge within budget — if it does, the substrate is not earning its keep"
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "twinforge://tools/verify",
+  "title": "twinforge.verify",
+  "description": "Compute IPMVP Option C verified savings with ASHRAE Guideline 14 confidence intervals. Output is the customer-facing report and an audit-trail JSON suitable for third-party review.",
+  "type": "object",
+  "required": ["building_id", "period"],
+  "properties": {
+    "building_id": { "type": "string" },
+    "period": {
+      "type": "string",
+      "description": "Reporting period in YYYY-Qn or YYYY-MM format.",
+      "pattern": "^\\d{4}(-Q[1-4]|-(0[1-9]|1[0-2]))$"
+    },
+    "baseline_period": {
+      "type": "object",
+      "description": "Baseline window. Defaults to 12 months immediately before deployment.",
+      "properties": {
+        "start": { "type": "string", "format": "date" },
+        "end": { "type": "string", "format": "date" }
+      }
+    },
+    "regressors": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["weather_oat", "weather_humidity", "occupancy", "time_of_day", "day_of_week", "schedule"]
+      },
+      "default": ["weather_oat", "occupancy", "time_of_day", "day_of_week"]
+    },
+    "min_r_squared": { "type": "number", "default": 0.75 },
+    "confidence_level": { "type": "number", "default": 0.9 },
+    "third_party_audit": { "type": "boolean", "default": false },
+    "output_format": {
+      "type": "string",
+      "enum": ["json", "pdf", "both"],
+      "default": "json"
+    }
+  },
+  "additionalProperties": false,
+  "x-output": {
+    "type": "object",
+    "properties": {
+      "building_id": { "type": "string" },
+      "period": { "type": "string" },
+      "baseline_kwh": { "type": "number" },
+      "measured_kwh": { "type": "number" },
+      "avoided_kwh": { "type": "number" },
+      "savings_pct": { "type": "number" },
+      "ci_low_pct": { "type": "number" },
+      "ci_high_pct": { "type": "number" },
+      "baseline_r_squared": { "type": "number" },
+      "ipmvp_option": { "type": "string", "const": "C" },
+      "audit_trail_url": { "type": "string", "format": "uri" }
+    }
+  },
+  "x-falsifiability": [
+    "report generates without manual intervention for any building with ≥ 3 months baseline",
+    "baseline regression R² ≥ 0.75 (else fail with 'baseline insufficient')",
+    "third-party energy auditor signs off on the methodology before first paid report"
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "twinforge://tools/ingest",
+  "title": "twinforge.ingest",
+  "description": "Pull building point-data from a source into the TwinForge time-series store. Returns ingest summary or fails fast on schema/quality issues.",
+  "type": "object",
+  "required": ["building_id", "source"],
+  "properties": {
+    "building_id": {
+      "type": "string",
+      "description": "Stable identifier for the building (e.g. 'lbnl_b59').",
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "source": {
+      "type": "object",
+      "oneOf": [
+        {
+          "title": "csv",
+          "required": ["kind", "path"],
+          "properties": {
+            "kind": { "const": "csv" },
+            "path": { "type": "string", "description": "Local path or s3://… URL to a parquet/CSV." }
+          },
+          "additionalProperties": false
+        },
+        {
+          "title": "bacnet",
+          "required": ["kind", "host"],
+          "properties": {
+            "kind": { "const": "bacnet" },
+            "host": { "type": "string", "description": "BACnet/IP host or device name." },
+            "port": { "type": "integer", "default": 47808 },
+            "read_only": { "type": "boolean", "default": true },
+            "point_filter": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Optional regex filter over BACnet point names."
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "title": "rest",
+          "required": ["kind", "url", "auth"],
+          "properties": {
+            "kind": { "const": "rest" },
+            "url": { "type": "string", "format": "uri" },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "token_env": { "type": "string", "description": "Env var holding the bearer token." }
+              },
+              "required": ["token_env"]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "history_days": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 730,
+      "default": 14,
+      "description": "How many days of historical data to pull on first sync."
+    },
+    "auto_tag": {
+      "type": "boolean",
+      "default": true,
+      "description": "Run point-class auto-tagger (zone_temp, setpoint, sat, mat, oat, valve, damper, meter, occupancy)."
+    }
+  },
+  "additionalProperties": false,
+  "x-output": {
+    "type": "object",
+    "properties": {
+      "building_id": { "type": "string" },
+      "points_total": { "type": "integer" },
+      "points_classified": { "type": "integer" },
+      "quality": {
+        "type": "object",
+        "properties": {
+          "good": { "type": "number" },
+          "stale": { "type": "number" },
+          "interpolated": { "type": "number" },
+          "invalid": { "type": "number" }
+        }
+      },
+      "first_ts": { "type": "string", "format": "date-time" },
+      "last_ts": { "type": "string", "format": "date-time" },
+      "elapsed_seconds": { "type": "number" }
+    }
+  },
+  "x-falsifiability": [
+    "ingest of 1 year of 5-min data for a single building completes in ≤ 60 seconds",
+    "auto-tagging accuracy ≥ 90% on the LBNL B59 labelled subset",
+    "round-trip read recovers original values within unit-conversion tolerance (atol=1e-3)"
+  ]
+}
